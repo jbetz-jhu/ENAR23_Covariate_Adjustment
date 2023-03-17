@@ -87,10 +87,13 @@ suppressWarnings({
 
 
 data_url <-
-  "https://github.com/jbetz-jhu/CovariateAdjustmentTutorial/raw/main/Simulated_MISTIE_III_v1.1.csv"
+  "https://github.com/jbetz-jhu/CovariateAdjustmentTutorial/raw/main/Simulated_MISTIE_III_v1.2.csv"
 
 sim_miii <-
-  read.csv(file = url(data_url))
+  read.csv(file = url(data_url)) %>% 
+  dplyr::slice(
+    1:500
+  )
 
 # Read in data: Recast categorical variables as factors
 sim_miii <-
@@ -128,15 +131,47 @@ sim_miii <-
 </style>
 
 
+
+## Outline:
+
+  - Covariate Adjustment Tutorials page
+  - Worked Example: Time-To-Event Outcomes
+    - Example: Mortality in MISTIE III Hemorrhagic Stroke Trial
+    - Unadjusted: Logrank, Cox, Survival Probability, RMST
+    - Adjusted: Cox, Survival Probability, RMST
+
+
+
+
+# Hands-On Tutorials for Covariate Adjustment | [https://bit.ly/covariateadjustedrcts](https://bit.ly/covariateadjustedrcts)
+
+
+
+
+## Tutorials on Covariate Adjustment | [https://bit.ly/covariateadjustedrcts](https://bit.ly/covariateadjustedrcts)
+
+  - Simulated data: mimic features of trials - Scale, correlations, missingness
+    - Continuous, Ordinal, Binary, Time-to-Event outcomes: Covariates
+    - Example datasets: Substance Abuse, Hemorrhagic Stroke
+    - Stratified randomization: improve precision
+  - Common estimands of interest; Analytic approaches
+  - R code for tabulating, plotting, analyzing data:
+    - Unadjusted & Adjusted
+  - Links to resources on learning and using R
+
+
+
+
 # Example: based on MISTIE III | Functional Outcome & Mortality in Hemorrhagic Stroke
 
 
 
 
-## MISTIE-III Trial: [@Hanley2019] {.smaller}
+## MISTIE-III Trial: [@Hanley2019]
 
-  - Hemorrhagic Stroke: 
-    - Intracranial Hemorrhage (ICH) with or without Intraventricular Hemorrhage (IVH)
+  - Hemorrhagic Stroke: Greater morbidity, mortality than ischemic stroke
+    - Intracerebral Hemorrhage (ICH), possibly with Intraventricular Hemorrhage (IVH)
+  - Consent: monitor daily for ICH stability by CT
   - 1:1 randomized - minimally invasive surgery + thrombolytic vs. SOC medical management
   - Safety & Efficacy: Functional outcome on Modified Rankin Scale (MRS)
     - MRS at 30, 180, and 365 days post randomization
@@ -177,10 +212,12 @@ sim_miii <-
     - `died_on_study`: participant died (`1`) or censored (`0`)
 
 
+# Show of Hands: Familiarity with R | Beginner, Intermediate Expert - **NO JUDGEMENT!**
 
 
 ## Installing R Packages from GitHub {.columns-2 .smaller}
 
+  - "Base R" comes with set of packages: Expanded to extend capabilities
   - [CRAN](https://cran.r-project.org/): Comprehensive R Archival Network
     - Can use `install_packages()` to install packages from CRAN, BioC, R-Forge
   - [RTools](https://cran.r-project.org/bin/windows/Rtools/): Tools for compiling packages from source
@@ -343,7 +380,7 @@ survival::survdiff(
 
 ## Unadjusted Cox Model: {.smaller}
 
-```{r}
+```{r unadjusted-Cox-PH}
 unadjusted_cox <-
   survival::coxph(
     formula =
@@ -361,7 +398,7 @@ summary(unadjusted_cox)
 
 ## Proportional Hazards Assumption {.columns-2 .smaller}
 
-```{r Cox-PH-Test-Code-echo, eval = FALSE}
+```{r unadjusted-Cox-PH-test-echo, eval = FALSE}
 unadjusted_cox_ph_test <-
   cox.zph(unadjusted_cox)
 print(unadjusted_cox_ph_test)
@@ -371,7 +408,7 @@ plot(cox.zph(unadjusted_cox),
 abline(h = 0, col = "red")
 ```
 
-```{r Cox-PH-Test-Code-evaluate, echo = FALSE}
+```{r unadjusted-Cox-PH-test-evaluate, echo = FALSE}
 unadjusted_cox_ph_test <-
   cox.zph(unadjusted_cox)
 print(unadjusted_cox_ph_test)
@@ -380,8 +417,7 @@ print(unadjusted_cox_ph_test)
 
 <p class="forceBreak"></p>
 
-
-```{r Cox-PH-Plot-evaluate, echo = FALSE}
+```{r unadjusted-Cox-PH-plot-evaluate, echo = FALSE}
 plot(cox.zph(unadjusted_cox),
      main = "Proportional Hazards Test")
 abline(h = 0, col = "red")
@@ -392,11 +428,11 @@ abline(h = 0, col = "red")
 
 ## Unadjusted Restricted Mean Survival Time {.columns-2 .smaller}
 
-  -  RMST in first 90 days:
-  - 83 days in the surgical arm
-  - 76 days in the medical arm
-  - Difference: 7.1 days
-  - Ratio: 1.09 (9% increase in RMST).
+  - RMST in first 90 days:
+  - ~85 days in the surgical arm
+  - ~76 days in the medical arm
+  - Difference: 8.8 days
+  - Ratio: 1.12 (12% increase in RMST).
 
 ```{r unadjusted-restricted-mean-survival-time-rmst2-echo, eval = FALSE}
 with(
@@ -429,6 +465,121 @@ with(
 
 
 
+## `adjrct` Package: RMST & Survival Probability {.columns-2 .smaller}
+
+  - Targeted Maximum Likelihood Estimation
+  - Compute "survival metadata" using `survrct`
+  - Use result to compute RMST & Survival Probability
+
+
+<p class="forceBreak"></p>
+
+
+```{r unadjusted-tmle-survival-metadata-adjrct, eval = FALSE}
+surv_metadata_unadj <-
+  adjrct::survrct(
+    outcome.formula =
+      Surv(days_on_study, died_on_study) ~ tx, 
+    trt.formula = tx ~ 1,
+    data = sim_miii,
+  )
+```
+
+```{r unadjusted-tmle-survival-rmst-adjrct, eval = FALSE}
+adjrct::rmst(
+  metadata = surv_metadata_unadj,
+  horizon = 90
+)
+```
+
+```{r unadjusted-tmle-survival-probability-adjrct, eval = FALSE}
+adjrct::survprob(
+  metadata = surv_metadata_unadj,
+  horizon = 90
+)
+```
+
+
+
+
+# Covariate Adjusted Analyses | Cox PH, RMST, Survival Probability
+
+
+
+## Adjusted Cox PH Model {.columns-2 .smaller}
+
+```{r adjusted-cox-linear}
+adjusted_cox_linear <-
+  coxph(
+    formula = Surv(days_on_study, died_on_study) ~ arm +
+      # Covariates
+      age + male + hx_cvd + hx_hyperlipidemia +
+      on_anticoagulants + on_antiplatelets + ich_location +
+      ich_s_volume + ivh_s_volume + gcs_category,
+    # Use Efron's Method for Tied Event Times
+    ties = "efron",
+    # Use Robust Standard Errors
+    robust = TRUE,
+    data = sim_miii
+  )
+```
+
+
+
+
+## Adjustment with Penalized Splines: `survival::pspline()`
+
+```{r adjusted-cox-pspline}
+adjusted_cox_ps <-
+  coxph(
+    formula = Surv(days_on_study, died_on_study) ~ arm +
+      # Covariates
+      pspline(age) + male + hx_cvd + hx_hyperlipidemia +
+      on_anticoagulants + on_antiplatelets + ich_location +
+      pspline(ich_s_volume) + pspline(ivh_s_volume) + gcs_category,
+    # Use Efron's Method for Tied Event Times
+    ties = "efron",
+    # Use Robust Standard Errors
+    robust = TRUE,
+    data = sim_miii
+  )
+```
+
+
+
+
+## Adjusted Cox Proportionality {.columns-2 .smaller}
+
+```{r adjusted-cox-ps-proportionality}
+cox.zph(
+  fit = adjusted_cox_ps
+)
+```
+
+
+<p class="forceBreak"></p>
+
+
+```{r adjusted-cox-ps-proportionality-plot}
+cox.zph(fit = adjusted_cox_ps) %>% 
+  plot(var = "arm")
+abline(h = 0, col = rgb(1, 0, 0, 0.75))
+```
+
+
+
+
+## Summary:
+
+  - Limitations of Logrank & Cox:
+    - PH Assumptions; Relative; Dependence on censoring
+  - Survival Probability & RMST:
+    - Absolute: specific reference to time; Sidestep PH assumption
+    - Doubly robust estimators
+    - Sample Size Calculations
+  - Tutorials: Continuous, Binary, Ordinal, Time-to-Event
+    - Example Data: Stroke, Substance Abuse - More forthcoming
+    - Fixed Sample Size; Group Sequential; Information Adaptive
 
 
 
