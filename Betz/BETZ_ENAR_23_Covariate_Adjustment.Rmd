@@ -18,12 +18,21 @@ bibliography: covariate_adjustment.bib # For Bibliography - In same folder
 ```{r setup, include = FALSE}
 # Packages used for formatting, not needed for analysis
 library(pander)
+library(knitr)
 library(Cairo)
 
 ### Graphics and Report Options ################################################
 table_digits <- 1 # Significant Figures for Mean/SD, N (%), Median/IQR
 
 root_url <- "https://jbetz-jhu.github.io/CovariateAdjustmentTutorial"
+
+load(
+  url(
+    paste0("https://github.com/jbetz-jhu/ENAR23_Covariate_Adjustment/raw/",
+           "main/Betz/sim_mistie_iii_1.2_tmle.Rdata")
+  )
+)
+
 
 bootstrap_tutorial_url <-
   paste0(root_url, "/bootstrap_tutorial.html")
@@ -465,7 +474,7 @@ with(
 
 
 
-## `adjrct` Package: RMST & Survival Probability {.columns-2 .smaller}
+## TMLE: RMST & Survival Probability {.columns-2 .smaller}
 
   - Targeted Maximum Likelihood Estimation
   - Compute "survival metadata" using `survrct`
@@ -496,6 +505,103 @@ adjrct::rmst(
 adjrct::survprob(
   metadata = surv_metadata_unadj,
   horizon = 90
+)
+```
+
+
+
+
+## TMLE: RMST & Survival Probability {.columns-2 .smaller}
+
+```{r echo = FALSE}
+rmst_tmle_unadj <-
+  adjrct::rmst(
+    metadata = surv_metadata_unadj,
+    horizon = 90
+  )
+
+rmst_metadata_unadj_table <-
+  with(
+    rmst_tmle_unadj$estimates[[1]],
+
+    bind_rows(
+      data.frame(
+        Arm = "Treatment",
+        Estimate = arm1,
+        SE = arm1.std.error,
+        LCL = arm1.conf.low,
+        UCL = arm1.conf.high
+      ),
+
+      data.frame(
+        Arm = "Control",
+        Estimate = arm0,
+        SE = arm0.std.error,
+        LCL = arm0.conf.low,
+        UCL = arm0.conf.high
+      ),
+      data.frame(
+        Arm = "Treatment - Control",
+        Estimate = theta,
+        SE = std.error,
+        LCL = theta.conf.low,
+        UCL = theta.conf.high
+      )
+    )
+  )
+
+kable(
+  x = rmst_metadata_unadj_table,
+  caption = "TMLE unadjusted estimates of Restricted Mean Survival Time.",
+  digits = 2
+)
+```
+
+
+<p class="forceBreak"></p>
+
+
+```{r echo = FALSE, warning = FALSE}
+survival_probability_unadj <-
+  adjrct::survprob(
+    metadata = surv_metadata_unadj,
+    horizon = 90
+  )
+
+survival_probability_unadj_table <-
+  with(
+    survival_probability_unadj$estimates[[1]],
+
+    bind_rows(
+      data.frame(
+        Arm = "Treatment",
+        Estimate = arm1,
+        SE = arm1.std.error,
+        LCL = arm1.conf.low,
+        UCL = arm1.conf.high
+      ),
+
+      data.frame(
+        Arm = "Control",
+        Estimate = arm0,
+        SE = arm0.std.error,
+        LCL = arm0.conf.low,
+        UCL = arm0.conf.high
+      ),
+      data.frame(
+        Arm = "Treatment - Control",
+        Estimate = theta,
+        SE = std.error,
+        LCL = theta.conf.low,
+        UCL = theta.conf.high
+      )
+    )
+  )
+
+kable(
+  x = survival_probability_unadj_table,
+  caption = "TMLE unadjusted estimates of Restricted Mean Survival Time.",
+  digits = 2
 )
 ```
 
@@ -564,6 +670,153 @@ cox.zph(
 cox.zph(fit = adjusted_cox_ps) %>% 
   plot(var = "arm")
 abline(h = 0, col = rgb(1, 0, 0, 0.75))
+```
+
+
+
+
+## Adjusted TMLE: RMST & Survival Probability {.smaller}
+
+```{r adjusted-tmle-metadata, eval = FALSE}
+surv_metadata_adj <-
+  adjrct::survrct(
+    outcome.formula = Surv(days_on_study, died_on_study) ~ tx +
+      age + male + hx_cvd + hx_hyperlipidemia +
+      on_anticoagulants + on_antiplatelets + ich_location +
+      ich_s_volume + ivh_s_volume + gcs_category,
+    trt.formula =
+      tx ~
+      age + male + hx_cvd + hx_hyperlipidemia +
+      on_anticoagulants + on_antiplatelets + ich_location +
+      ich_s_volume + ivh_s_volume + gcs_category,
+    data = sim_miii
+  )
+```
+
+
+```{r adjusted-tmle-survival-rmst-adjrct, eval = FALSE}
+adjrct::rmst(
+  metadata = surv_metadata_adj,
+  horizon = 90
+)
+```
+
+
+```{r adjusted-tmle-survival-probability-adjrct, eval = FALSE}
+adjrct::survprob(
+  metadata = surv_metadata_adj,
+  horizon = 90
+)
+```
+
+
+
+
+## TMLE: RMST & Survival Probability {.columns-2 .smaller}
+
+```{r echo = FALSE}
+rmst_tmle_adj <-
+  adjrct::rmst(
+    metadata = surv_metadata_adj,
+    horizon = 90
+  )
+
+rmst_metadata_adj_table <-
+  with(
+    rmst_tmle_adj$estimates[[1]],
+
+    bind_rows(
+      data.frame(
+        Arm = "Treatment",
+        Estimate = arm1,
+        SE = arm1.std.error,
+        LCL = arm1.conf.low,
+        UCL = arm1.conf.high
+      ),
+
+      data.frame(
+        Arm = "Control",
+        Estimate = arm0,
+        SE = arm0.std.error,
+        LCL = arm0.conf.low,
+        UCL = arm0.conf.high
+      ),
+      data.frame(
+        Arm = "Treatment - Control",
+        Estimate = theta,
+        SE = std.error,
+        LCL = theta.conf.low,
+        UCL = theta.conf.high
+      )
+    )
+  )
+
+kable(
+  x = rmst_metadata_adj_table,
+  caption = "TMLE adjusted estimates of Restricted Mean Survival Time.",
+  digits = 2
+)
+
+kable(
+  x = rmst_metadata_unadj_table,
+  caption = "TMLE **unadjusted** estimates of Restricted Mean Survival Time.",
+  digits = 2
+)
+
+```
+
+
+<p class="forceBreak"></p>
+
+
+```{r echo = FALSE, warning = FALSE}
+survival_probability_adj <-
+  adjrct::survprob(
+    metadata = surv_metadata_adj,
+    horizon = 90
+  )
+
+survival_probability_adj_table <-
+  with(
+    survival_probability_adj$estimates[[1]],
+
+    bind_rows(
+      data.frame(
+        Arm = "Treatment",
+        Estimate = arm1,
+        SE = arm1.std.error,
+        LCL = arm1.conf.low,
+        UCL = arm1.conf.high
+      ),
+
+      data.frame(
+        Arm = "Control",
+        Estimate = arm0,
+        SE = arm0.std.error,
+        LCL = arm0.conf.low,
+        UCL = arm0.conf.high
+      ),
+      data.frame(
+        Arm = "Treatment - Control",
+        Estimate = theta,
+        SE = std.error,
+        LCL = theta.conf.low,
+        UCL = theta.conf.high
+      )
+    )
+  )
+
+kable(
+  x = survival_probability_adj_table,
+  caption = "TMLE adjusted estimates of Restricted Mean Survival Time.",
+  digits = 2
+)
+
+kable(
+  x = survival_probability_unadj_table,
+  caption = "TMLE **unadjusted** estimates of Restricted Mean Survival Time.",
+  digits = 2
+)
 ```
 
 
