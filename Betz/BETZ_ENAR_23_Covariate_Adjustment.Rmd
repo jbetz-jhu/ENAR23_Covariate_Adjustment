@@ -612,7 +612,7 @@ kable(
 
 
 
-## Adjusted Cox PH Model {.columns-2 .smaller}
+## Adjusted Cox PH Model {.smaller}
 
 ```{r adjusted-cox-linear}
 adjusted_cox_linear <-
@@ -622,10 +622,8 @@ adjusted_cox_linear <-
       age + male + hx_cvd + hx_hyperlipidemia +
       on_anticoagulants + on_antiplatelets + ich_location +
       ich_s_volume + ivh_s_volume + gcs_category,
-    # Use Efron's Method for Tied Event Times
-    ties = "efron",
-    # Use Robust Standard Errors
-    robust = TRUE,
+    ties = "efron", # Efron's Method for Ties
+    robust = TRUE, # Use Robust SEs
     data = sim_miii
   )
 ```
@@ -808,13 +806,13 @@ survival_probability_adj_table <-
 
 kable(
   x = survival_probability_adj_table,
-  caption = "TMLE adjusted estimates of Restricted Mean Survival Time.",
+  caption = "TMLE adjusted estimates of 90-day Survival.",
   digits = 2
 )
 
 kable(
   x = survival_probability_unadj_table,
-  caption = "TMLE **unadjusted** estimates of Restricted Mean Survival Time.",
+  caption = "TMLE **unadjusted** estimates of 90-day Survival.",
   digits = 2
 )
 ```

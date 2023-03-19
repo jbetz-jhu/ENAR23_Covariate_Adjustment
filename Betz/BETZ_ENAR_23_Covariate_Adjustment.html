@@ -3896,7 +3896,7 @@ abline(h = 0, col = &quot;red&quot;)</pre>
 
 </article></slide><slide class="segue dark nobackground level1"><hgroup class = 'auto-fadein'><h2>Covariate Adjusted Analyses </h2><h3> Cox PH, RMST, Survival Probability</h3></hgroup><article  id="covariate-adjusted-analyses-cox-ph-rmst-survival-probability">
 
-</article></slide><slide class=""><hgroup><h2>Adjusted Cox PH Model</h2></hgroup><article  id="adjusted-cox-ph-model" class="columns-2 smaller">
+</article></slide><slide class=""><hgroup><h2>Adjusted Cox PH Model</h2></hgroup><article  id="adjusted-cox-ph-model" class="smaller">
 
 <pre class = 'prettyprint lang-r'>adjusted_cox_linear &lt;-
   coxph(
@@ -3905,10 +3905,8 @@ abline(h = 0, col = &quot;red&quot;)</pre>
       age + male + hx_cvd + hx_hyperlipidemia +
       on_anticoagulants + on_antiplatelets + ich_location +
       ich_s_volume + ivh_s_volume + gcs_category,
-    # Use Efron&#39;s Method for Tied Event Times
-    ties = &quot;efron&quot;,
-    # Use Robust Standard Errors
-    robust = TRUE,
+    ties = &quot;efron&quot;, # Efron&#39;s Method for Ties
+    robust = TRUE, # Use Robust SEs
     data = sim_miii
   )</pre>
 
@@ -4055,7 +4053,7 @@ abline(h = 0, col = rgb(1, 0, 0, 0.75))</pre>
 </p>
 
 <table class = 'rmdtable'>
-<caption>TMLE adjusted estimates of Restricted Mean Survival Time.</caption>
+<caption>TMLE adjusted estimates of 90-day Survival.</caption>
 <tr class="header">
 <th align="left">Arm</th>
 <th align="right">Estimate</th>
@@ -4087,7 +4085,7 @@ abline(h = 0, col = rgb(1, 0, 0, 0.75))</pre>
 </table>
 
 <table class = 'rmdtable'>
-<caption>TMLE <strong>unadjusted</strong> estimates of Restricted Mean Survival Time.</caption>
+<caption>TMLE <strong>unadjusted</strong> estimates of 90-day Survival.</caption>
 <tr class="header">
 <th align="left">Arm</th>
 <th align="right">Estimate</th>
